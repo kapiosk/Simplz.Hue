@@ -1,0 +1,20 @@
+﻿@page "/"
+@inject Simplz.Hue.Services.HueService HueService
+<PageTitle>Index</PageTitle>
+
+<button @onclick=TurnOnAsync>💡</button>
+<button @onclick=TurnOffAsync>🔌</button>
+
+<img src="https://vanschneider.com/blog/content/images/wp-content/uploads/2017/01/cake.jpg" alt="The cake is a lie" />
+
+@code {
+    async Task TurnOnAsync()
+    {
+        await HueService.TurnOnAsync("office");
+    }
+
+    async Task TurnOffAsync()
+    {
+        await HueService.TurnOffAsync("office");
+    }
+}
