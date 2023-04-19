@@ -11,7 +11,7 @@ builder.Services.AddScoped<HueService>();
 
 builder.Services.AddScoped<IConfigRepo>((serviceProvider) =>
 {
-    Type interfaceType = typeof(IConfigRepo);
+    var interfaceType = typeof(IConfigRepo);
     var configRepoType = Assembly.GetExecutingAssembly().GetTypes().Where(t => interfaceType.IsAssignableFrom(t) && t.IsClass).FirstOrDefault();
     if (configRepoType is not null)
     {
