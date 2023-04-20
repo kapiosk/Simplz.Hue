@@ -24,7 +24,7 @@ builder.Services.AddScoped<IConfigRepo>((serviceProvider) =>
 
 await using var app = builder.Build();
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 app.UseStaticFiles();
 app.MapBlazorHub();

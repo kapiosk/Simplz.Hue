@@ -9,6 +9,4 @@ internal interface IConfigRepo
     public Task<string?> GetBridgeIPAsync();
 
     public Task SetBridgeIPAsync(string key);
-
-    public Task<List<Guid>> GetGroupLightsAsync(string group);
 }

@@ -62,20 +62,42 @@ internal sealed class HueService
         return await _localHueApi.GetLightsAsync();
     }
 
-    internal async Task TurnOnAsync(string groupName)
+    internal async Task TurnOnAsync(Guid roomId)
     {
         _localHueApi ??= await GetHueApiAsync();
         var req = new UpdateLight().TurnOn();
-        foreach (var lightId in await _configRepo.GetGroupLightsAsync(groupName))
+        var lightIds = await GetLightIdsAsync(roomId);
+        foreach (var lightId in lightIds)
             await _localHueApi.UpdateLightAsync(lightId, req);
     }
 
-    internal async Task TurnOffAsync(string groupName)
+    internal async Task TurnOffAsync(Guid roomId)
     {
         _localHueApi ??= await GetHueApiAsync();
         var req = new UpdateLight().TurnOff();
-        foreach (var lightId in await _configRepo.GetGroupLightsAsync(groupName))
+        var lightIds = await GetLightIdsAsync(roomId);
+        foreach (var lightId in lightIds)
             await _localHueApi.UpdateLightAsync(lightId, req);
     }
 
+    private async Task<IEnumerable<Guid>> GetLightIdsAsync(Guid roomId)
+    {
+        _localHueApi ??= await GetHueApiAsync();
+        var room = await _localHueApi.GetRoomAsync(roomId);
+        var lights = await _localHueApi.GetLightsAsync();
+        return lights.Data.Where(l => room.Data.First().Children.Any(c => c.Rid == l.Owner.Rid)).Select(l => l.Id);
+    }
+
+    internal async Task<List<Models.Room>> GetGroupsAsync()
+    {
+        _localHueApi ??= await GetHueApiAsync();
+        var roomResponse = await _localHueApi.GetRoomsAsync();
+        return roomResponse.Data.Select(r => new Models.Room(r.Id, r.Metadata?.Name ?? string.Empty, r.Children.Select(l => l.Rid).ToList())).ToList() ?? new();
+    }
+
+    internal async Task GetScenesAsync()
+    {
+        _localHueApi ??= await GetHueApiAsync();
+        //var scenes = await _localHueApi.GetScenesAsync();
+    }
 }

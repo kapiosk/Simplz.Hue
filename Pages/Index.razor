@@ -1,6 +1,17 @@
 ﻿@page "/"
+@using Simplz.Hue.Models;
 @inject Simplz.Hue.Services.HueService HueService
 <PageTitle>Index</PageTitle>
+
+@if (Rooms is not null)
+{
+    <select @bind="SelectedRoomId">
+        @foreach (var room in Rooms)
+        {
+            <option value="@room.Id">@room.Name</option>
+        }
+    </select>
+}
 
 <button @onclick=TurnOnAsync>💡</button>
 <button @onclick=TurnOffAsync>🔌</button>
@@ -8,13 +19,23 @@
 <img src="https://vanschneider.com/blog/content/images/wp-content/uploads/2017/01/cake.jpg" alt="The cake is a lie" />
 
 @code {
+    List<Room>? Rooms { get; set; }
+    Guid SelectedRoomId { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Rooms = await HueService.GetGroupsAsync();
+        SelectedRoomId = Rooms.First().Id;
+    }
+
     async Task TurnOnAsync()
     {
-        await HueService.TurnOnAsync("office");
+        await HueService.GetGroupsAsync();
+        await HueService.TurnOnAsync(SelectedRoomId);
     }
 
     async Task TurnOffAsync()
     {
-        await HueService.TurnOffAsync("office");
+        await HueService.TurnOffAsync(SelectedRoomId);
     }
 }
