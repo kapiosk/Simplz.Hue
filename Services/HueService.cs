@@ -62,6 +62,18 @@ internal sealed class HueService
         return await _localHueApi.GetLightsAsync();
     }
 
+    internal async Task ApplyDimmerAsync(Guid roomId, double brightness)
+    {
+        _localHueApi ??= await GetHueApiAsync();
+        var req = new UpdateLight()
+        {
+            Dimming = new() { Brightness = brightness }
+        };
+        var lightIds = await GetLightIdsAsync(roomId);
+        foreach (var lightId in lightIds)
+            await _localHueApi.UpdateLightAsync(lightId, req);
+    }
+
     internal async Task TurnOnAsync(Guid roomId)
     {
         _localHueApi ??= await GetHueApiAsync();

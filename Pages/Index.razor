@@ -37,6 +37,11 @@
     </div>
 </div>
 
+<div class="card">
+    <h5 class="card-header">Dimmer</h5>
+    <input type="range" class="form-range" min="0" max="100" step="0.01" @onchange=ApplyDimmerAsync>
+</div>
+
 @code {
     List<Room>? Rooms { get; set; }
     List<(Guid, string)>? Scenes { get; set; }
@@ -49,6 +54,12 @@
         Scenes = await HueService.GetScenesAsync();
         SelectedRoomId = Rooms.First().Id;
         SelectedSceneId = Scenes.First().Item1;
+    }
+
+    async Task ApplyDimmerAsync(Microsoft.AspNetCore.Components.ChangeEventArgs eventArgs)
+    {
+        if (eventArgs.Value is not null)
+            await HueService.ApplyDimmerAsync(SelectedRoomId, double.Parse((string)eventArgs.Value));
     }
 
     async Task ApplySceneAsync()
