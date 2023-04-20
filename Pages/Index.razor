@@ -56,7 +56,7 @@
         SelectedSceneId = Scenes.First().Item1;
     }
 
-    async Task ApplyDimmerAsync(Microsoft.AspNetCore.Components.ChangeEventArgs eventArgs)
+    async Task ApplyDimmerAsync(ChangeEventArgs eventArgs)
     {
         if (eventArgs.Value is not null)
             await HueService.ApplyDimmerAsync(SelectedRoomId, double.Parse((string)eventArgs.Value));
