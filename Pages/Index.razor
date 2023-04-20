@@ -3,34 +3,66 @@
 @inject Simplz.Hue.Services.HueService HueService
 <PageTitle>Index</PageTitle>
 
-@if (Rooms is not null)
-{
-    <select @bind="SelectedRoomId">
-        @foreach (var room in Rooms)
+<div class="card">
+    <h5 class="card-header">Room</h5>
+    <div class="card-body">
+        @if (Rooms is not null)
         {
-            <option value="@room.Id">@room.Name</option>
+            <select @bind="SelectedRoomId" class="form-select">
+                @foreach (var room in Rooms)
+                {
+                    <option value="@room.Id">@room.Name</option>
+                }
+            </select>
         }
-    </select>
-}
+        <button type="button" class="btn btn-success" @onclick=TurnOnAsync>On</button>
+        <button type="button" class="btn btn-danger" @onclick=TurnOffAsync>Off</button>
+    </div>
+</div>
 
-<button @onclick=TurnOnAsync>💡</button>
-<button @onclick=TurnOffAsync>🔌</button>
-
-<img src="https://vanschneider.com/blog/content/images/wp-content/uploads/2017/01/cake.jpg" alt="The cake is a lie" />
+<div class="card">
+    <h5 class="card-header">Scene</h5>
+    <div class="card-body">
+        @if (Scenes is not null)
+        {
+            <select @bind="SelectedSceneId" class="form-select">
+                @foreach (var (sceneId, name) in Scenes)
+                {
+                    <option value="@sceneId">@name</option>
+                }
+            </select>
+        }
+        <button type="button" class="btn btn-primary" @onclick=ActivateSceneAsync>Activate Scene</button>
+        <button type="button" class="btn btn-info" @onclick=ApplySceneAsync>Apply Scene to Room</button>
+    </div>
+</div>
 
 @code {
     List<Room>? Rooms { get; set; }
+    List<(Guid, string)>? Scenes { get; set; }
     Guid SelectedRoomId { get; set; }
+    Guid SelectedSceneId { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
         Rooms = await HueService.GetGroupsAsync();
+        Scenes = await HueService.GetScenesAsync();
         SelectedRoomId = Rooms.First().Id;
+        SelectedSceneId = Scenes.First().Item1;
+    }
+
+    async Task ApplySceneAsync()
+    {
+        await HueService.ApplySceneAsync(SelectedSceneId, SelectedRoomId);
+    }
+
+    async Task ActivateSceneAsync()
+    {
+        await HueService.ActivateSceneAsync(SelectedSceneId);
     }
 
     async Task TurnOnAsync()
     {
-        await HueService.GetGroupsAsync();
         await HueService.TurnOnAsync(SelectedRoomId);
     }
 

@@ -95,9 +95,53 @@ internal sealed class HueService
         return roomResponse.Data.Select(r => new Models.Room(r.Id, r.Metadata?.Name ?? string.Empty, r.Children.Select(l => l.Rid).ToList())).ToList() ?? new();
     }
 
-    internal async Task GetScenesAsync()
+    internal async Task<List<(Guid, string)>> GetScenesAsync()
     {
         _localHueApi ??= await GetHueApiAsync();
-        //var scenes = await _localHueApi.GetScenesAsync();
+        var scenes = await _localHueApi.GetScenesAsync();
+        return scenes.Data.Select(s => (s.Id, s.Metadata?.Name ?? string.Empty)).ToList();
+    }
+
+    internal async Task ActivateSceneAsync(Guid sceneId)
+    {
+        _localHueApi ??= await GetHueApiAsync();
+        var scene = await _localHueApi.GetSceneAsync(sceneId);
+        var lights = await _localHueApi.GetLightsAsync();
+        foreach (var action in scene.Data.First().Actions)
+        {
+            var req = new UpdateLight()
+            {
+                On = action.Action.On,
+                Dimming = action.Action.Dimming,
+                ColorTemperature = action.Action.ColorTemperature,
+                Color = action.Action.Color,
+                Dynamics = action.Action.Dynamics,
+                Gradient = action.Action.Gradient,
+                Effects = action.Action.Effects,
+            };
+            var light = lights.Data.First(l => l.Owner.Rid == action.Target.Rid);
+            await _localHueApi.UpdateLightAsync(light.Id, req);
+        }
+    }
+
+    internal async Task ApplySceneAsync(Guid sceneId, Guid roomId)
+    {
+        _localHueApi ??= await GetHueApiAsync();
+        var scene = await _localHueApi.GetSceneAsync(sceneId);
+        var lightIds = await GetLightIdsAsync(roomId);
+        foreach (var (action, lightId) in scene.Data.First().Actions.Zip(lightIds))
+        {
+            var req = new UpdateLight()
+            {
+                On = action.Action.On,
+                Dimming = action.Action.Dimming,
+                ColorTemperature = action.Action.ColorTemperature,
+                Color = action.Action.Color,
+                Dynamics = action.Action.Dynamics,
+                Gradient = action.Action.Gradient,
+                Effects = action.Action.Effects,
+            };
+            await _localHueApi.UpdateLightAsync(lightId, req);
+        }
     }
 }
