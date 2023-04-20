@@ -15,8 +15,16 @@
                 }
             </select>
         }
-        <button type="button" class="btn btn-success" @onclick="TurnOnAsync">On</button>
-        <button type="button" class="btn btn-danger" @onclick="TurnOffAsync">Off</button>
+        <div class="form-check form-switch">
+            @if (LightsAreOn)
+            {
+                <input class="form-check-input" type="checkbox" role="switch" @onchange="LightsToggleAsync" checked />
+            }
+            else
+            {
+                <input class="form-check-input" type="checkbox" role="switch" @onchange="LightsToggleAsync" />
+            }
+        </div>
     </div>
 </div>
 
@@ -50,6 +58,7 @@
     Guid SelectedRoomId { get; set; }
     Guid SelectedSceneId { get; set; }
     double Brightness { get; set; }
+    bool LightsAreOn { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -66,10 +75,21 @@
         await SetLightControlsAsync();
     }
 
+    async Task LightsToggleAsync(ChangeEventArgs eventArgs)
+    {
+        LightsAreOn = (bool?)eventArgs.Value ?? false;
+        if (LightsAreOn)
+            await HueService.TurnOnAsync(SelectedRoomId);
+        else
+            await HueService.TurnOffAsync(SelectedRoomId);
+        await SetLightControlsAsync();
+    }
+
     async Task SetLightControlsAsync()
     {
         RoomLights = await HueService.GetRoomLightsStatus(SelectedRoomId);
         Brightness = RoomLights.Select(l => l.Brightness).Average();
+        LightsAreOn = RoomLights.Any(l => l.IsOn);
     }
 
     async Task ApplyDimmerAsync(ChangeEventArgs eventArgs)
@@ -86,15 +106,5 @@
     async Task ActivateSceneAsync()
     {
         await HueService.ActivateSceneAsync(SelectedSceneId);
-    }
-
-    async Task TurnOnAsync()
-    {
-        await HueService.TurnOnAsync(SelectedRoomId);
-    }
-
-    async Task TurnOffAsync()
-    {
-        await HueService.TurnOffAsync(SelectedRoomId);
     }
 }
