@@ -1,3 +1,5 @@
+//TODO: Store data in Localstorage, after MAUI conversion
+
 namespace Simplz.Hue.Data;
 
 internal interface IConfigRepo
