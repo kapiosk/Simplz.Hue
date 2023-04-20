@@ -8,15 +8,15 @@
     <div class="card-body">
         @if (Rooms is not null)
         {
-            <select @bind="SelectedRoomId" class="form-select">
+            <select class="form-select" @onchange="RoomSelectedAsync">
                 @foreach (var room in Rooms)
                 {
                     <option value="@room.Id">@room.Name</option>
                 }
             </select>
         }
-        <button type="button" class="btn btn-success" @onclick=TurnOnAsync>On</button>
-        <button type="button" class="btn btn-danger" @onclick=TurnOffAsync>Off</button>
+        <button type="button" class="btn btn-success" @onclick="TurnOnAsync">On</button>
+        <button type="button" class="btn btn-danger" @onclick="TurnOffAsync">Off</button>
     </div>
 </div>
 
@@ -32,34 +32,50 @@
                 }
             </select>
         }
-        <button type="button" class="btn btn-primary" @onclick=ActivateSceneAsync>Activate Scene</button>
-        <button type="button" class="btn btn-info" @onclick=ApplySceneAsync>Apply Scene to Room</button>
+        <button type="button" class="btn btn-primary" @onclick="ActivateSceneAsync">Activate Scene</button>
+        <button type="button" class="btn btn-info" @onclick="ApplySceneAsync">Apply Scene to Room</button>
     </div>
 </div>
 
 <div class="card">
     <h5 class="card-header">Dimmer</h5>
-    <input type="range" class="form-range" min="0" max="100" step="0.01" @onchange=ApplyDimmerAsync>
+    <input type="range" class="form-range" min="0" max="100" step="0.01" @onchange="ApplyDimmerAsync"
+        value="@Brightness">
 </div>
 
 @code {
     List<Room>? Rooms { get; set; }
-    List<(Guid, string)>? Scenes { get; set; }
+    List<Scene>? Scenes { get; set; }
+    List<LightStatus>? RoomLights { get; set; }
     Guid SelectedRoomId { get; set; }
     Guid SelectedSceneId { get; set; }
+    double Brightness { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
         Rooms = await HueService.GetGroupsAsync();
         Scenes = await HueService.GetScenesAsync();
         SelectedRoomId = Rooms.First().Id;
-        SelectedSceneId = Scenes.First().Item1;
+        await SetLightControlsAsync();
+        SelectedSceneId = Scenes.First().Id;
+    }
+
+    async Task RoomSelectedAsync(ChangeEventArgs eventArgs)
+    {
+        SelectedRoomId = Guid.Parse((string?)eventArgs.Value ?? string.Empty);
+        await SetLightControlsAsync();
+    }
+
+    async Task SetLightControlsAsync()
+    {
+        RoomLights = await HueService.GetRoomLightsStatus(SelectedRoomId);
+        Brightness = RoomLights.Select(l => l.Brightness).Average();
     }
 
     async Task ApplyDimmerAsync(ChangeEventArgs eventArgs)
     {
-        if (eventArgs.Value is not null)
-            await HueService.ApplyDimmerAsync(SelectedRoomId, double.Parse((string)eventArgs.Value));
+        Brightness = double.Parse((string?)eventArgs.Value ?? "0");
+        await HueService.ApplyDimmerAsync(SelectedRoomId, Brightness);
     }
 
     async Task ApplySceneAsync()

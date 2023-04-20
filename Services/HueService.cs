@@ -100,18 +100,27 @@ internal sealed class HueService
         return lights.Data.Where(l => room.Data.First().Children.Any(c => c.Rid == l.Owner.Rid)).Select(l => l.Id);
     }
 
+    internal async Task<List<Models.LightStatus>> GetRoomLightsStatus(Guid roomId)
+    {
+        _localHueApi ??= await GetHueApiAsync();
+        var room = await _localHueApi.GetRoomAsync(roomId);
+        var lights = await _localHueApi.GetLightsAsync();
+        var roomLights = lights.Data.Where(l => room.Data.First().Children.Any(c => c.Rid == l.Owner.Rid));
+        return roomLights.Select(l => new Models.LightStatus(l.Id, l.Dimming?.Brightness ?? 0, l.On.IsOn)).ToList();
+    }
+
     internal async Task<List<Models.Room>> GetGroupsAsync()
     {
         _localHueApi ??= await GetHueApiAsync();
         var roomResponse = await _localHueApi.GetRoomsAsync();
-        return roomResponse.Data.Select(r => new Models.Room(r.Id, r.Metadata?.Name ?? string.Empty, r.Children.Select(l => l.Rid).ToList())).ToList() ?? new();
+        return roomResponse.Data.Select(r => new Models.Room(r.Id, r.Metadata?.Name ?? string.Empty)).ToList() ?? new();
     }
 
-    internal async Task<List<(Guid, string)>> GetScenesAsync()
+    internal async Task<List<Models.Scene>> GetScenesAsync()
     {
         _localHueApi ??= await GetHueApiAsync();
         var scenes = await _localHueApi.GetScenesAsync();
-        return scenes.Data.Select(s => (s.Id, s.Metadata?.Name ?? string.Empty)).ToList();
+        return scenes.Data.Select(s => new Models.Scene(s.Id, s.Metadata?.Name ?? string.Empty)).ToList();
     }
 
     internal async Task ActivateSceneAsync(Guid sceneId)
