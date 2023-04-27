@@ -2,14 +2,21 @@
 @using Simplz.Hue.Models;
 @inject Simplz.Hue.Services.HueService HueService
 
-<PageTitle>Index</PageTitle>
+<PageTitle>Hue</PageTitle>
 
-<div class="card">
+@if (!Paired)
+{
+    <div class="card text-white bg-danger mb-3">
+        <h5 class="card-header">Please press the bair button</h5>
+    </div>
+}
+
+<div class="card mb-3">
     <h5 class="card-header">Room</h5>
     <div class="card-body">
         @if (Rooms is not null)
         {
-            <select class="form-select" @onchange="RoomSelectedAsync">
+            <select class="form-select" @onchange=RoomSelectedAsync>
                 @foreach (var room in Rooms)
                 {
                     <option value="@room.Id">@room.Name</option>
@@ -29,12 +36,12 @@
     </div>
 </div>
 
-<div class="card">
+<div class="card mb-3">
     <h5 class="card-header">Scene</h5>
     <div class="card-body">
         @if (Scenes is not null)
         {
-            <select @bind="SelectedSceneId" class="form-select">
+            <select @bind=SelectedSceneId class="form-select">
                 @foreach (var (sceneId, name) in Scenes)
                 {
                     <option value="@sceneId">@name</option>
@@ -46,10 +53,10 @@
     </div>
 </div>
 
-<div class="card">
+<div class="card mb-3">
     <h5 class="card-header">Dimmer</h5>
     <input type="range" class="form-range" min="0" max="100" step="0.01" @onchange="ApplyDimmerAsync"
-           value="@Brightness">
+        value="@Brightness">
 </div>
 
 @code {
@@ -60,25 +67,33 @@
     Guid SelectedSceneId { get; set; }
     double Brightness { get; set; }
     bool LightsAreOn { get; set; }
+    bool Paired { get; set; }
+
     Timer? _backgroundTimer;
 
     protected override void OnInitialized()
     {
-        _backgroundTimer = new(new TimerCallback(_ =>
+        _backgroundTimer = new(new(_ => InvokeAsync(RefreshStateAsync)), null, 0, 1000);
+    }
+
+    async Task RefreshStateAsync()
+    {
+        Paired = await HueService.IsRegisteredAsync();
+        if (Paired)
         {
-            InvokeAsync(async () =>
-        {
-            if (await HueService.IsRegisteredAsync())
+            if (Rooms is null)
             {
                 Rooms = await HueService.GetGroupsAsync();
-                Scenes = await HueService.GetScenesAsync();
                 SelectedRoomId = Rooms.First().Id;
-                await SetLightControlsAsync();
+            }
+            if (Scenes is null)
+            {
+                Scenes = await HueService.GetScenesAsync();
                 SelectedSceneId = Scenes.First().Id;
             }
-            StateHasChanged();
-        });
-        }), null, 0, 1000);
+            await SetLightControlsAsync();
+        }
+        StateHasChanged();
     }
 
     async Task RoomSelectedAsync(ChangeEventArgs eventArgs)
