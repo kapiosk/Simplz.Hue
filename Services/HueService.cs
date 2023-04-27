@@ -6,6 +6,7 @@ using HueApi.Models;
 using HueApi.Models.Exceptions;
 using HueApi.Models.Requests;
 using Simplz.Hue.Data;
+using System.Diagnostics;
 
 internal sealed class HueService
 {
@@ -17,43 +18,53 @@ internal sealed class HueService
         _configRepo = configRepo;
     }
 
+    public async Task<bool> IsRegisteredAsync()
+    {
+        try
+        {
+            await GetHueApiAsync();
+            return true;
+        }
+        catch (LinkButtonNotPressedException)
+        {
+            return false;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex);
+            throw;
+        }
+    }
+
     private async Task<LocalHueApi> GetHueApiAsync()
     {
         string? bridgeIP = await _configRepo.GetBridgeIPAsync();
         bridgeIP ??= await DiscoverBridgeIPAsync();
+        await _configRepo.SetBridgeIPAsync(bridgeIP);
 
         string? appKey = await _configRepo.GetKeyAsync();
         appKey ??= await RegisterAppAsync(bridgeIP);
+        await _configRepo.SetKeyAsync(appKey);
 
         return new(bridgeIP, appKey);
     }
 
-    private async Task<string> DiscoverBridgeIPAsync()
+    private static async Task<string> DiscoverBridgeIPAsync()
     {
         HttpBridgeLocator locator = new();
-        var bridges = await locator.LocateBridgesAsync(TimeSpan.FromSeconds(5));
+        var bridges = await locator.LocateBridgesAsync(TimeSpan.FromSeconds(30));
 
         var _bridge = bridges.FirstOrDefault();
 
-        if (_bridge is null)
-            throw new Exception("No bridges found.");
-
-        return _bridge.IpAddress;
+        return _bridge is null ? throw new Exception("No bridges found.") : _bridge.IpAddress;
     }
 
-    private async Task<string> RegisterAppAsync(string ip)
+    private static async Task<string> RegisterAppAsync(string ip)
     {
-        try
-        {
-            var regResult = await LocalHueApi.RegisterAsync(ip, "simplz.hue", Environment.MachineName);
-            if (string.IsNullOrEmpty(regResult?.Username))
-                throw new Exception();
-            return regResult.Username;
-        }
-        catch (LinkButtonNotPressedException)
-        {
-            return string.Empty;
-        }
+        var regResult = await LocalHueApi.RegisterAsync(ip, "simplz.hue", Environment.MachineName);
+        if (string.IsNullOrEmpty(regResult?.Username))
+            throw new Exception();
+        return regResult.Username;
     }
 
     internal async Task<HueResponse<Light>> GetLightsAsync()

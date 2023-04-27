@@ -1,6 +1,7 @@
 ﻿@page "/"
 @using Simplz.Hue.Models;
 @inject Simplz.Hue.Services.HueService HueService
+
 <PageTitle>Index</PageTitle>
 
 <div class="card">
@@ -48,7 +49,7 @@
 <div class="card">
     <h5 class="card-header">Dimmer</h5>
     <input type="range" class="form-range" min="0" max="100" step="0.01" @onchange="ApplyDimmerAsync"
-        value="@Brightness">
+           value="@Brightness">
 </div>
 
 @code {
@@ -59,14 +60,25 @@
     Guid SelectedSceneId { get; set; }
     double Brightness { get; set; }
     bool LightsAreOn { get; set; }
+    Timer? _backgroundTimer;
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        Rooms = await HueService.GetGroupsAsync();
-        Scenes = await HueService.GetScenesAsync();
-        SelectedRoomId = Rooms.First().Id;
-        await SetLightControlsAsync();
-        SelectedSceneId = Scenes.First().Id;
+        _backgroundTimer = new(new TimerCallback(_ =>
+        {
+            InvokeAsync(async () =>
+        {
+            if (await HueService.IsRegisteredAsync())
+            {
+                Rooms = await HueService.GetGroupsAsync();
+                Scenes = await HueService.GetScenesAsync();
+                SelectedRoomId = Rooms.First().Id;
+                await SetLightControlsAsync();
+                SelectedSceneId = Scenes.First().Id;
+            }
+            StateHasChanged();
+        });
+        }), null, 0, 1000);
     }
 
     async Task RoomSelectedAsync(ChangeEventArgs eventArgs)
