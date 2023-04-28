@@ -18,7 +18,7 @@ public static class MauiProgram
 			});
 
 		builder.Services.AddMauiBlazorWebView();
-		builder.Services.AddScoped<IConfigRepo, ConfigRepo>();
+		builder.Services.AddScoped<IConfigRepo, ConfigSecureStorageRepo>();
 		builder.Services.AddScoped<HueService>();
 
 #if DEBUG
