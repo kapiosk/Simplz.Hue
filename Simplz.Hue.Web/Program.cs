@@ -1,8 +1,8 @@
 //TODO: Convert to MAUI Project
 
 using System.Reflection;
-using Simplz.Hue.Data;
-using Simplz.Hue.Services;
+using Simplz.Hue.Core.Data;
+using Simplz.Hue.Core.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 

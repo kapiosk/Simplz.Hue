@@ -6,13 +6,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="HueApi" Version="1.0.0" />
-    <PackageReference Include="HueApi.ColorConverters" Version="1.0.0" />
-    <PackageReference Include="HueApi.Entertainment" Version="1.4.0" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.5" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\Simplz.Hue.Core\Simplz.Hue.Core.csproj" />
+	</ItemGroup>
 
   <PropertyGroup>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>

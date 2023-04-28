@@ -1,5 +1,5 @@
-.vs
-.vscode
-bin
-obj
-Data/ConfigRepo.cs
+**/.vs/
+**/.vscode/
+**/bin/
+**/obj/
+**/Data/ConfigRepo.cs

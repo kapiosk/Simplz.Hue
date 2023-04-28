@@ -1,0 +1,125 @@
+﻿@page "/"
+@using Simplz.Hue.Models;
+@inject Simplz.Hue.Services.HueService HueService
+
+<PageTitle>Index</PageTitle>
+
+<div class="card">
+    <h5 class="card-header">Room</h5>
+    <div class="card-body">
+        @if (Rooms is not null)
+        {
+            <select class="form-select" @onchange="RoomSelectedAsync">
+                @foreach (var room in Rooms)
+                {
+                    <option value="@room.Id">@room.Name</option>
+                }
+            </select>
+        }
+        <div class="form-check form-switch">
+            @if (LightsAreOn)
+            {
+                <input class="form-check-input" type="checkbox" role="switch" @onchange="LightsToggleAsync" checked />
+            }
+            else
+            {
+                <input class="form-check-input" type="checkbox" role="switch" @onchange="LightsToggleAsync" />
+            }
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h5 class="card-header">Scene</h5>
+    <div class="card-body">
+        @if (Scenes is not null)
+        {
+            <select @bind="SelectedSceneId" class="form-select">
+                @foreach (var (sceneId, name) in Scenes)
+                {
+                    <option value="@sceneId">@name</option>
+                }
+            </select>
+        }
+        <button type="button" class="btn btn-primary" @onclick="ActivateSceneAsync">Activate Scene</button>
+        <button type="button" class="btn btn-info" @onclick="ApplySceneAsync">Apply Scene to Room</button>
+    </div>
+</div>
+
+<div class="card">
+    <h5 class="card-header">Dimmer</h5>
+    <input type="range" class="form-range" min="0" max="100" step="0.01" @onchange="ApplyDimmerAsync"
+           value="@Brightness">
+</div>
+
+@code {
+    List<Room>? Rooms { get; set; }
+    List<Scene>? Scenes { get; set; }
+    List<LightStatus>? RoomLights { get; set; }
+    Guid SelectedRoomId { get; set; }
+    Guid SelectedSceneId { get; set; }
+    double Brightness { get; set; }
+    bool LightsAreOn { get; set; }
+    Timer _backgroundTimer;
+
+    protected override void OnInitialized()
+    {
+        _backgroundTimer = new(new TimerCallback(_ =>
+        {
+            InvokeAsync(async () =>
+        {
+            if (await HueService.IsRegisteredAsync())
+            {
+                Rooms = await HueService.GetGroupsAsync();
+                Scenes = await HueService.GetScenesAsync();
+                SelectedRoomId = Rooms.First().Id;
+                await SetLightControlsAsync();
+                SelectedSceneId = Scenes.First().Id;
+            }
+            StateHasChanged();
+        });
+        }), null, 0, 1000);
+    }
+
+    async Task RoomSelectedAsync(ChangeEventArgs eventArgs)
+    {
+        SelectedRoomId = Guid.Parse((string?)eventArgs.Value ?? string.Empty);
+        await SetLightControlsAsync();
+    }
+
+    async Task LightsToggleAsync(ChangeEventArgs eventArgs)
+    {
+        LightsAreOn = (bool?)eventArgs.Value ?? false;
+        if (LightsAreOn)
+            await HueService.TurnOnAsync(SelectedRoomId);
+        else
+            await HueService.TurnOffAsync(SelectedRoomId);
+        await SetLightControlsAsync();
+    }
+
+    async Task SetLightControlsAsync()
+    {
+        RoomLights = await HueService.GetRoomLightsStatus(SelectedRoomId);
+        Brightness = RoomLights.Select(l => l.Brightness).Average();
+        LightsAreOn = RoomLights.Any(l => l.IsOn);
+    }
+
+    async Task ApplyDimmerAsync(ChangeEventArgs eventArgs)
+    {
+        Brightness = double.Parse((string?)eventArgs.Value ?? "0");
+        await HueService.ApplyDimmerAsync(SelectedRoomId, Brightness);
+    }
+
+    async Task ApplySceneAsync()
+    {
+        await HueService.ApplySceneAsync(SelectedSceneId, SelectedRoomId);
+    }
+
+    async Task ActivateSceneAsync()
+    {
+        await HueService.ActivateSceneAsync(SelectedSceneId);
+    }
+
+    //TODO: Individual light on/off
+    //TODO: Prettify UI
+}
