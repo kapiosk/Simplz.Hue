@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
-using Simplz.Hue.Data;
+using Simplz.Hue.Core.Data;
+using Simplz.Hue.Core.Services;
 using Simplz.Hue.Mobile.Data;
-using Simplz.Hue.Services;
 
 namespace Simplz.Hue.Mobile;
 
@@ -19,12 +19,12 @@ public static class MauiProgram
 
 		builder.Services.AddMauiBlazorWebView();
 		builder.Services.AddScoped<IConfigRepo, ConfigRepo>();
+		builder.Services.AddScoped<HueService>();
 
 #if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();
 		builder.Logging.AddDebug();
 #endif
-        builder.Services.AddScoped<HueService>();
 
 		return builder.Build();
 	}
